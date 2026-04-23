@@ -12,13 +12,16 @@ public sealed class UploadProductCoverFunction
 {
     private readonly ProductCoverUploadService _productCoverUploadService;
     private readonly BlobStorageOptions _blobStorageOptions;
+    private readonly JwtTokenValidator _jwtTokenValidator;
 
     public UploadProductCoverFunction(
         ProductCoverUploadService productCoverUploadService,
-        IOptions<BlobStorageOptions> blobStorageOptions)
+        IOptions<BlobStorageOptions> blobStorageOptions,
+        JwtTokenValidator jwtTokenValidator)
     {
         _productCoverUploadService = productCoverUploadService;
         _blobStorageOptions = blobStorageOptions.Value;
+        _jwtTokenValidator = jwtTokenValidator;
     }
 
     [Function(nameof(UploadProductCoverFunction))]
@@ -28,6 +31,14 @@ public sealed class UploadProductCoverFunction
         Guid productId,
         CancellationToken cancellationToken)
     {
+        var token = request.GetBearerToken();
+        if (token is null || !await _jwtTokenValidator.IsValidAsync(token, cancellationToken))
+        {
+            var unauthorized = request.CreateResponse(HttpStatusCode.Unauthorized);
+            await unauthorized.WriteStringAsync("Unauthorized.", cancellationToken);
+            return unauthorized;
+        }
+
         // Bước 1: đọc đúng 1 file ảnh từ request multipart/form-data.
         // Chi tiết multipart khó đọc nên được gom vào MultipartFileReader.
         var (file, readError) = await MultipartFileReader.ReadSingleFileAsync(request, cancellationToken);

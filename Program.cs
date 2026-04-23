@@ -17,7 +17,12 @@ var host = new HostBuilder()
             .AddOptions<BlobStorageOptions>()
             .Bind(context.Configuration.GetSection(BlobStorageOptions.SectionName));
 
+        services
+            .AddOptions<AuthenticationOptions>()
+            .Bind(context.Configuration.GetSection(AuthenticationOptions.SectionName));
+
         services.AddSingleton<ProductCoverUploadService>();
+        services.AddSingleton<JwtTokenValidator>();
     })
     .Build();
 
