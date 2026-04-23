@@ -1,6 +1,8 @@
 using Azure.Storage.Blobs;
 using Microsoft.Extensions.Options;
 using Platform.ProductCoverUpload.Function.Configurations;
+using Platform.ProductCoverUpload.Function.Enums;
+using Platform.ProductCoverUpload.Function.Helpers;
 using Platform.ProductCoverUpload.Function.Models;
 
 namespace Platform.ProductCoverUpload.Function.Services;
@@ -22,17 +24,28 @@ public sealed class ProductCoverUploadService
         _blobStorageOptions = blobStorageOptions.Value;
     }
 
-    public async Task<UploadProductCoverResult> UploadAsync(Guid productId, MultipartFileData file, CancellationToken cancellationToken)
+    public async Task<UploadProductCoverResult> UploadAsync(
+        Guid productId,
+        MultipartFileData file,
+        ProductCoverUploadVisibility visibility,
+        CancellationToken cancellationToken)
     {
         // Validate loại file trước khi đụng tới blob storage.
         if (!AllowedContentTypes.Contains(file.ContentType))
             throw new InvalidOperationException("Only JPEG, PNG, and WEBP images are allowed.");
 
+        if (!ImageSignatureValidator.IsValid(file))
+            throw new InvalidOperationException("File content does not match a supported image format.");
+
         // Hai config này là tối thiểu để service biết upload vào đâu.
         if (string.IsNullOrWhiteSpace(_blobStorageOptions.ConnectionString))
             throw new InvalidOperationException("Blob storage connection string is not configured.");
 
-        if (string.IsNullOrWhiteSpace(_blobStorageOptions.ContainerName))
+        var containerName = visibility == ProductCoverUploadVisibility.Public
+            ? _blobStorageOptions.PublicContainerName
+            : _blobStorageOptions.PrivateContainerName;
+
+        if (string.IsNullOrWhiteSpace(containerName))
             throw new InvalidOperationException("Blob storage container name is not configured.");
 
         // Giữ lại extension gốc để file upload sau này vẫn đúng định dạng.
@@ -45,7 +58,7 @@ public sealed class ProductCoverUploadService
         var blobName = $"products/{productId}/cover/{generatedFileName}";
 
         var blobServiceClient = new BlobServiceClient(_blobStorageOptions.ConnectionString);
-        var containerClient = blobServiceClient.GetBlobContainerClient(_blobStorageOptions.ContainerName);
+        var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
         // Nếu container chưa tồn tại thì tạo mới trước khi upload.
         await containerClient.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
 
@@ -63,8 +76,10 @@ public sealed class ProductCoverUploadService
         {
             FileName = generatedFileName,
             BlobName = blobName,
+            ContainerName = containerName,
             ContentType = file.ContentType,
             Size = file.FileSize
         };
     }
+
 }

@@ -3,7 +3,9 @@ using Microsoft.IdentityModel.Protocols;
 using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 using Microsoft.IdentityModel.Tokens;
 using Platform.ProductCoverUpload.Function.Configurations;
+using Platform.ProductCoverUpload.Function.Results;
 using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
 
 namespace Platform.ProductCoverUpload.Function.Services;
 
@@ -20,10 +22,10 @@ public sealed class JwtTokenValidator
             new OpenIdConnectConfigurationRetriever());
     }
 
-    public async Task<bool> IsValidAsync(string token, CancellationToken cancellationToken)
+    public async Task<JwtValidationResult> ValidateAsync(string token, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(_options.Authority) || string.IsNullOrWhiteSpace(_options.Audience))
-            return false;
+            return JwtValidationResult.Invalid();
 
         var configuration = await _configurationManager.GetConfigurationAsync(cancellationToken);
 
@@ -41,12 +43,23 @@ public sealed class JwtTokenValidator
 
         try
         {
-            new JwtSecurityTokenHandler().ValidateToken(token, parameters, out _);
-            return true;
+            var principal = new JwtSecurityTokenHandler().ValidateToken(token, parameters, out _);
+
+            var userIdValue = FindFirstValue(principal, ClaimTypes.NameIdentifier)
+                ?? FindFirstValue(principal, "sub");
+
+            if (!Guid.TryParse(userIdValue, out var userId))
+                return JwtValidationResult.Invalid();
+
+            var roles = KeycloakRoleReader.ReadRoles(principal).ToArray();
+            return JwtValidationResult.Valid(userId, roles);
         }
         catch
         {
-            return false;
+            return JwtValidationResult.Invalid();
         }
     }
+
+    private static string? FindFirstValue(ClaimsPrincipal principal, string claimType)
+        => principal.FindFirst(claimType)?.Value;
 }

@@ -7,15 +7,20 @@ on:
 jobs:
   build:
     uses: Platform-System/Platform.CI-CD/.github/workflows/dotnet-build-template.yml@main
+    secrets:
+      repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
     with:
       project_path: 'Platform.ProductCoverUpload.Function.csproj'
+      dependencies: 'Platform-System/Platform.Contracts'
 
   deploy:
     uses: Platform-System/Platform.CI-CD/.github/workflows/azure-function-flex-deploy-template.yml@main
     needs: build
     secrets:
       publish_profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+      repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
     with:
       project_path: 'Platform.ProductCoverUpload.Function.csproj'
       function_app_name: 'fa-product-cover-upload'
+      dependencies: 'Platform-System/Platform.Contracts'
 

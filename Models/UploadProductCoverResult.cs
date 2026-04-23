@@ -6,6 +6,7 @@ public sealed class UploadProductCoverResult
     // Chỉ giữ metadata của file, không trả url public/private tại đây.
     public string FileName { get; set; } = string.Empty;
     public string BlobName { get; set; } = string.Empty;
+    public string ContainerName { get; set; } = string.Empty;
     public string ContentType { get; set; } = string.Empty;
     public long Size { get; set; }
 }

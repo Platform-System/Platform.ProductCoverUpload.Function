@@ -2,6 +2,7 @@ using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Options;
 using Platform.ProductCoverUpload.Function.Configurations;
+using Platform.ProductCoverUpload.Function.Enums;
 using Platform.ProductCoverUpload.Function.Helpers;
 using Platform.ProductCoverUpload.Function.Services;
 using System.Net;
@@ -13,15 +14,18 @@ public sealed class UploadProductCoverFunction
     private readonly ProductCoverUploadService _productCoverUploadService;
     private readonly BlobStorageOptions _blobStorageOptions;
     private readonly JwtTokenValidator _jwtTokenValidator;
+    private readonly CatalogAuthorizationClient _catalogAuthorizationClient;
 
     public UploadProductCoverFunction(
         ProductCoverUploadService productCoverUploadService,
         IOptions<BlobStorageOptions> blobStorageOptions,
-        JwtTokenValidator jwtTokenValidator)
+        JwtTokenValidator jwtTokenValidator,
+        CatalogAuthorizationClient catalogAuthorizationClient)
     {
         _productCoverUploadService = productCoverUploadService;
         _blobStorageOptions = blobStorageOptions.Value;
         _jwtTokenValidator = jwtTokenValidator;
+        _catalogAuthorizationClient = catalogAuthorizationClient;
     }
 
     [Function(nameof(UploadProductCoverFunction))]
@@ -32,11 +36,36 @@ public sealed class UploadProductCoverFunction
         CancellationToken cancellationToken)
     {
         var token = request.GetBearerToken();
-        if (token is null || !await _jwtTokenValidator.IsValidAsync(token, cancellationToken))
+        if (token is null)
         {
             var unauthorized = request.CreateResponse(HttpStatusCode.Unauthorized);
             await unauthorized.WriteStringAsync("Unauthorized.", cancellationToken);
             return unauthorized;
+        }
+
+        var validation = await _jwtTokenValidator.ValidateAsync(token, cancellationToken);
+        if (!validation.IsValid || validation.UserId is null)
+        {
+            var unauthorized = request.CreateResponse(HttpStatusCode.Unauthorized);
+            await unauthorized.WriteStringAsync("Unauthorized.", cancellationToken);
+            return unauthorized;
+        }
+
+        var authorization = await _catalogAuthorizationClient.AuthorizeProductCoverUploadAsync(
+            productId,
+            validation.UserId.Value,
+            validation.Roles,
+            cancellationToken);
+
+        if (!authorization.IsAllowed)
+        {
+            var statusCode = authorization.Status == ProductCoverUploadAuthorizationStatus.Unavailable
+                ? HttpStatusCode.ServiceUnavailable
+                : HttpStatusCode.Forbidden;
+
+            var denied = request.CreateResponse(statusCode);
+            await denied.WriteStringAsync(authorization.Error ?? "Forbidden.", cancellationToken);
+            return denied;
         }
 
         // Bước 1: đọc đúng 1 file ảnh từ request multipart/form-data.
@@ -59,7 +88,11 @@ public sealed class UploadProductCoverFunction
         try
         {
             // Bước 3: upload file lên Blob Storage và trả metadata cho client.
-            var result = await _productCoverUploadService.UploadAsync(productId, file, cancellationToken);
+            var result = await _productCoverUploadService.UploadAsync(
+                productId,
+                file,
+                authorization.Visibility!.Value,
+                cancellationToken);
             var okResponse = request.CreateResponse(HttpStatusCode.OK);
             await okResponse.WriteAsJsonAsync(result, cancellationToken);
             return okResponse;
