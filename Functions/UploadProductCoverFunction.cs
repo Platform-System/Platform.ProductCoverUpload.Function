@@ -28,10 +28,13 @@ public sealed class UploadProductCoverFunction
         Guid productId,
         CancellationToken cancellationToken)
     {
+        // Bước 1: đọc đúng 1 file ảnh từ request multipart/form-data.
+        // Chi tiết multipart khó đọc nên được gom vào MultipartFileReader.
         var (file, readError) = await MultipartFileReader.ReadSingleFileAsync(request, cancellationToken);
         if (readError is not null || file is null)
             return await HttpRequestHelpers.CreateBadRequestAsync(request, readError!, cancellationToken);
 
+        // Bước 2: validate dung lượng file trước khi upload lên Azure Blob.
         if (file.FileSize == 0)
             return await HttpRequestHelpers.CreateBadRequestAsync(request, "File is empty.", cancellationToken);
 
@@ -44,6 +47,7 @@ public sealed class UploadProductCoverFunction
 
         try
         {
+            // Bước 3: upload file lên Blob Storage và trả metadata cho client.
             var result = await _productCoverUploadService.UploadAsync(productId, file, cancellationToken);
             var okResponse = request.CreateResponse(HttpStatusCode.OK);
             await okResponse.WriteAsJsonAsync(result, cancellationToken);
@@ -51,10 +55,12 @@ public sealed class UploadProductCoverFunction
         }
         catch (InvalidOperationException ex)
         {
+            // Lỗi do validate/config sai thì trả 400 để client biết request chưa hợp lệ.
             return await HttpRequestHelpers.CreateBadRequestAsync(request, ex.Message, cancellationToken);
         }
         catch (Exception)
         {
+            // Lỗi ngoài dự kiến, ví dụ Blob Storage lỗi, thì trả 500.
             var internalError = request.CreateResponse(HttpStatusCode.InternalServerError);
             await internalError.WriteStringAsync("Unable to upload product cover image.", cancellationToken);
             return internalError;

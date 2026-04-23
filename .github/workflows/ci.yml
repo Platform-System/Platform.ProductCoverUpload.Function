@@ -1,4 +1,4 @@
-name: Product Cover Upload CI/CD
+name: CI/CD
 
 on:
   push:
@@ -18,3 +18,4 @@ jobs:
     with:
       project_path: 'Platform.ProductCoverUpload.Function.csproj'
       function_app_name: 'fa-product-cover-upload'
+
