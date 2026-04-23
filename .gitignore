@@ -1,0 +1,10 @@
+bin/
+obj/
+.vs/
+.vscode/
+local.settings.json
+appsettings.Development.json
+*.csproj.user
+Properties/PublishProfiles/
+Properties/ServiceDependencies/
+Properties/serviceDependencies*.json
