@@ -1,4 +1,4 @@
-name: Product Cover Upload CI
+name: Product Cover Upload CI/CD
 
 on:
   push:
