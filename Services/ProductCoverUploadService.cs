@@ -1,4 +1,5 @@
 using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Options;
 using Platform.ProductCoverUpload.Function.Configurations;
 using Platform.ProductCoverUpload.Function.Enums;
@@ -41,13 +42,6 @@ public sealed class ProductCoverUploadService
         if (string.IsNullOrWhiteSpace(_blobStorageOptions.ConnectionString))
             throw new InvalidOperationException("Blob storage connection string is not configured.");
 
-        var containerName = visibility == ProductCoverUploadVisibility.Public
-            ? _blobStorageOptions.PublicContainerName
-            : _blobStorageOptions.PrivateContainerName;
-
-        if (string.IsNullOrWhiteSpace(containerName))
-            throw new InvalidOperationException("Blob storage container name is not configured.");
-
         // Giữ lại extension gốc để file upload sau này vẫn đúng định dạng.
         var extension = Path.GetExtension(file.FileName);
         if (string.IsNullOrWhiteSpace(extension))
@@ -58,28 +52,41 @@ public sealed class ProductCoverUploadService
         var blobName = $"products/{productId}/cover/{generatedFileName}";
 
         var blobServiceClient = new BlobServiceClient(_blobStorageOptions.ConnectionString);
+        var containerName = visibility == ProductCoverUploadVisibility.Public
+            ? "products-public"
+            : "products-private";
+        var containerAccessType = visibility == ProductCoverUploadVisibility.Public
+            ? PublicAccessType.Blob
+            : PublicAccessType.None;
         var containerClient = blobServiceClient.GetBlobContainerClient(containerName);
-        // Nếu container chưa tồn tại thì tạo mới trước khi upload.
-        await containerClient.CreateIfNotExistsAsync(cancellationToken: cancellationToken);
+        await containerClient.CreateIfNotExistsAsync(containerAccessType, cancellationToken: cancellationToken);
+        await containerClient.SetAccessPolicyAsync(containerAccessType, cancellationToken: cancellationToken);
 
         var blobClient = containerClient.GetBlobClient(blobName);
 
         // Upload file lên đúng path cover của product.
         await using (file.FileStream)
         {
-            await blobClient.UploadAsync(file.FileStream, overwrite: true, cancellationToken: cancellationToken);
+            await blobClient.UploadAsync(
+                file.FileStream,
+                new BlobUploadOptions
+                {
+                    HttpHeaders = new BlobHttpHeaders
+                    {
+                        ContentType = file.ContentType
+                    }
+                },
+                cancellationToken);
         }
 
-        // Chỉ trả metadata của file đã upload.
-        // Việc public/private và generate url sẽ để service khác quyết định sau.
+        // Chỉ trả metadata của file đã upload để Catalog lưu metadata vào DB.
         return new UploadProductCoverResult
         {
             FileName = generatedFileName,
             BlobName = blobName,
-            ContainerName = containerName,
+            ContainerName = containerClient.Name,
             ContentType = file.ContentType,
             Size = file.FileSize
         };
     }
-
 }
