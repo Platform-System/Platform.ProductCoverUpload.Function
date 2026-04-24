@@ -63,12 +63,15 @@ public sealed class CatalogAuthorizationClient
                 {
                     ProductId = productId.ToString(),
                     UserId = userId.ToString(),
-                    BlobName = uploadResult.BlobName,
-                    ContainerName = uploadResult.ContainerName,
-                    FileName = uploadResult.FileName,
-                    ContentType = uploadResult.ContentType,
-                    Size = uploadResult.Size,
-                    AltText = uploadResult.AltText
+                    Cover = new UploadedFileInfo
+                    {
+                        BlobName = uploadResult.BlobName,
+                        ContainerName = uploadResult.ContainerName,
+                        FileName = uploadResult.FileName,
+                        ContentType = uploadResult.ContentType,
+                        Size = uploadResult.Size,
+                        AltText = uploadResult.AltText
+                    }
                 },
                 cancellationToken: cancellationToken);
 
