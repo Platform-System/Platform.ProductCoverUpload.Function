@@ -1,6 +1,7 @@
 using Grpc.Core;
 using Platform.Catalog.Grpc;
 using Platform.ProductCoverUpload.Function.Enums;
+using Platform.ProductCoverUpload.Function.Models;
 using Platform.ProductCoverUpload.Function.Results;
 
 namespace Platform.ProductCoverUpload.Function.Services;
@@ -46,6 +47,39 @@ public sealed class CatalogAuthorizationClient
         catch (RpcException)
         {
             return ProductCoverUploadAuthorizationResult.Unavailable("Catalog service is unavailable.");
+        }
+    }
+
+    public async Task<ProductCoverSetResult> SetProductCoverAsync(
+        Guid productId,
+        Guid userId,
+        UploadProductCoverResult uploadResult,
+        CancellationToken cancellationToken)
+    {
+        try
+        {
+            var response = await _client.SetProductCoverAsync(
+                new SetProductCoverRequest
+                {
+                    ProductId = productId.ToString(),
+                    UserId = userId.ToString(),
+                    BlobName = uploadResult.BlobName,
+                    ContainerName = uploadResult.ContainerName,
+                    FileName = uploadResult.FileName,
+                    ContentType = uploadResult.ContentType,
+                    Size = uploadResult.Size,
+                    AltText = uploadResult.AltText
+                },
+                cancellationToken: cancellationToken);
+
+            if (!response.Status.IsSuccess)
+                return ProductCoverSetResult.Failure(response.Status.Errors.FirstOrDefault() ?? "Unable to save product cover.");
+
+            return ProductCoverSetResult.Success();
+        }
+        catch (RpcException)
+        {
+            return ProductCoverSetResult.Unavailable("Catalog service is unavailable.");
         }
     }
 }

@@ -93,6 +93,24 @@ public sealed class UploadProductCoverFunction
                 file,
                 authorization.Visibility!.Value,
                 cancellationToken);
+
+            var setCoverResult = await _catalogAuthorizationClient.SetProductCoverAsync(
+                productId,
+                validation.UserId.Value,
+                result,
+                cancellationToken);
+
+            if (!setCoverResult.IsSuccess)
+            {
+                var statusCode = setCoverResult.IsUnavailable
+                    ? HttpStatusCode.ServiceUnavailable
+                    : HttpStatusCode.BadRequest;
+
+                var failed = request.CreateResponse(statusCode);
+                await failed.WriteStringAsync(setCoverResult.Error ?? "Unable to save product cover.", cancellationToken);
+                return failed;
+            }
+
             var okResponse = request.CreateResponse(HttpStatusCode.OK);
             await okResponse.WriteAsJsonAsync(result, cancellationToken);
             return okResponse;
