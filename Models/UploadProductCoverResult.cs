@@ -9,4 +9,5 @@ public sealed class UploadProductCoverResult
     public string ContainerName { get; set; } = string.Empty;
     public string ContentType { get; set; } = string.Empty;
     public long Size { get; set; }
+    public string AltText { get; set; } = string.Empty;
 }

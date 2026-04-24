@@ -32,6 +32,7 @@ public static class MultipartFileReader
         var reader = new MultipartReader(boundary, request.Body);
         MultipartFileData? file = null;
         var fileCount = 0;
+        string? altText = null;
 
         MultipartSection? section;
         // Duyệt từng phần trong request body cho tới khi hết dữ liệu.
@@ -40,6 +41,18 @@ public static class MultipartFileReader
             // Content-Disposition cho biết section này có phải file hay chỉ là field text.
             if (!ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var disposition))
                 continue;
+
+            if (disposition?.DispositionType == "form-data" && string.IsNullOrWhiteSpace(disposition.FileName.Value))
+            {
+                var fieldName = disposition.Name.Value?.Trim('"');
+                if (string.Equals(fieldName, "altText", StringComparison.OrdinalIgnoreCase))
+                {
+                    using var textReader = new StreamReader(section.Body);
+                    altText = await textReader.ReadToEndAsync(cancellationToken);
+                }
+
+                continue;
+            }
 
             // Bỏ qua các section không phải file upload.
             if (disposition?.DispositionType != "form-data" || string.IsNullOrWhiteSpace(disposition.FileName.Value))
@@ -66,6 +79,11 @@ public static class MultipartFileReader
         // Không tìm được file nào trong request.
         if (file is null || string.IsNullOrWhiteSpace(file.FileName))
             return (null, "File is required.");
+
+        file.AltText = altText ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(file.AltText))
+            return (null, "Alt text is required.");
 
         return (file, null);
     }
