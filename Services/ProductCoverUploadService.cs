@@ -2,6 +2,7 @@ using Azure.Storage.Blobs;
 using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Options;
 using Platform.ProductCoverUpload.Function.Configurations;
+using Platform.ProductCoverUpload.Function.Constants;
 using Platform.ProductCoverUpload.Function.Enums;
 using Platform.ProductCoverUpload.Function.Helpers;
 using Platform.ProductCoverUpload.Function.Models;
@@ -53,8 +54,8 @@ public sealed class ProductCoverUploadService
 
         var blobServiceClient = new BlobServiceClient(_blobStorageOptions.ConnectionString);
         var containerName = visibility == ProductCoverUploadVisibility.Public
-            ? "products-public"
-            : "products-private";
+            ? BlobContainerNames.ProductsPublic
+            : BlobContainerNames.ProductsPrivate;
         var containerAccessType = visibility == ProductCoverUploadVisibility.Public
             ? PublicAccessType.Blob
             : PublicAccessType.None;
