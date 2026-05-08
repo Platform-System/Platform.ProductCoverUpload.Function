@@ -1,8 +1,16 @@
-name: CI/CD
+name: CI
 
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
+  pull_request:
+    branches: [ main ]
+    paths-ignore:
+      - '**.md'
+      - '.gitignore'
 
 jobs:
   build:
@@ -12,15 +20,3 @@ jobs:
     with:
       project_path: 'Platform.ProductCoverUpload.Function.csproj'
       dependencies: 'Platform-System/Platform.Contracts'
-
-  deploy:
-    uses: Platform-System/Platform.CI-CD/.github/workflows/azure-function-flex-deploy-template.yml@main
-    needs: build
-    secrets:
-      publish_profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
-      repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
-    with:
-      project_path: 'Platform.ProductCoverUpload.Function.csproj'
-      function_app_name: 'fa-product-cover-upload'
-      dependencies: 'Platform-System/Platform.Contracts'
-

@@ -1,0 +1,20 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types:
+      - completed
+    branches: [ main ]
+
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' }}
+    uses: Platform-System/Platform.CI-CD/.github/workflows/azure-function-flex-deploy-template.yml@main
+    secrets:
+      publish_profile: ${{ secrets.AZURE_FUNCTIONAPP_PUBLISH_PROFILE }}
+      repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
+    with:
+      project_path: 'Platform.ProductCoverUpload.Function.csproj'
+      function_app_name: 'fa-product-cover-upload'
+      dependencies: 'Platform-System/Platform.Contracts'
