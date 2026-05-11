@@ -1,5 +1,9 @@
 name: CI
 
+permissions:
+  contents: read
+  packages: write
+
 on:
   push:
     branches: [ main ]
@@ -19,4 +23,5 @@ jobs:
     with:
       project_path: 'Platform.ProductCoverUpload.Function.csproj'
       dependencies: 'Platform-System/Platform.Contracts'
+
 
