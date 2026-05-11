@@ -14,9 +14,9 @@ on:
 
 jobs:
   build:
-    uses: Platform-System/Platform.CI-CD/.github/workflows/dotnet-build-template.yml@main
-    secrets:
-      repo_access_token: ${{ secrets.REPO_ACCESS_TOKEN }}
+    uses: Platform-System/Platform.CI-CD/.github/workflows/build-dotnet.yml@main
+    secrets: inherit
     with:
       project_path: 'Platform.ProductCoverUpload.Function.csproj'
       dependencies: 'Platform-System/Platform.Contracts'
+
