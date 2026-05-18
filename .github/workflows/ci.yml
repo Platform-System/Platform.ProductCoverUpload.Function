@@ -22,6 +22,7 @@ jobs:
     secrets: inherit
     with:
       project_path: 'Platform.ProductCoverUpload.Function.csproj'
+      test_path: 'Platform.ProductCoverUpload.Function.Tests/Platform.ProductCoverUpload.Function.Tests.csproj'
       dependencies: 'Platform-System/Platform.Contracts'
 
 
