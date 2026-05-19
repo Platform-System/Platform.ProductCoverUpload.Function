@@ -28,6 +28,9 @@ public sealed class UploadProductCoverFunction
         _catalogAuthorizationClient = catalogAuthorizationClient;
     }
 
+    /// <summary>
+    /// Uploads a product cover image.
+    /// </summary>
     [Function(nameof(UploadProductCoverFunction))]
     public async Task<HttpResponseData> Run(
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = "products/{productId:guid}/cover")]
