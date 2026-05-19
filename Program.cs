@@ -20,11 +20,16 @@ var host = new HostBuilder()
 
         services
             .AddOptions<AuthenticationOptions>()
-            .Bind(context.Configuration.GetSection(AuthenticationOptions.SectionName));
+            .Bind(context.Configuration.GetSection(AuthenticationOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.Authority), "Authentication:Authority is required.")
+            .Validate(options => !string.IsNullOrWhiteSpace(options.Audience), "Authentication:Audience is required.")
+            .ValidateOnStart();
 
         services
             .AddOptions<CatalogIntegrationOptions>()
-            .Bind(context.Configuration.GetSection(CatalogIntegrationOptions.SectionName));
+            .Bind(context.Configuration.GetSection(CatalogIntegrationOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.Address), "Integrations:Catalog:Address is required.")
+            .ValidateOnStart();
 
         var catalogAddress = context.Configuration[$"{CatalogIntegrationOptions.SectionName}:Address"];
 
