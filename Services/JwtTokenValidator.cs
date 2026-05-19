@@ -27,22 +27,22 @@ public sealed class JwtTokenValidator
         if (string.IsNullOrWhiteSpace(_options.Authority) || string.IsNullOrWhiteSpace(_options.Audience))
             return JwtValidationResult.Invalid();
 
-        var configuration = await _configurationManager.GetConfigurationAsync(cancellationToken);
-
-        var parameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = _options.Authority.TrimEnd('/'),
-            ValidateAudience = true,
-            ValidAudience = _options.Audience,
-            ValidateLifetime = true,
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKeys = configuration.SigningKeys,
-            ClockSkew = TimeSpan.FromMinutes(1)
-        };
-
         try
         {
+            var configuration = await _configurationManager.GetConfigurationAsync(cancellationToken);
+
+            var parameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = _options.Authority.TrimEnd('/'),
+                ValidateAudience = true,
+                ValidAudience = _options.Audience,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKeys = configuration.SigningKeys,
+                ClockSkew = TimeSpan.FromMinutes(1)
+            };
+
             var principal = new JwtSecurityTokenHandler().ValidateToken(token, parameters, out _);
 
             var userIdValue = FindFirstValue(principal, ClaimTypes.NameIdentifier)
