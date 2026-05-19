@@ -8,6 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Azure.Storage.Blobs" Version="12.23.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
     <PackageReference Include="xunit" Version="2.9.2" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
@@ -17,7 +19,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Platform.ProductCoverUpload.Function.csproj" />
+    <Compile Include="..\Configurations\BlobStorageOptions.cs" Link="Source\Configurations\BlobStorageOptions.cs" />
+    <Compile Include="..\Constants\BlobContainerNames.cs" Link="Source\Constants\BlobContainerNames.cs" />
+    <Compile Include="..\Enums\ProductCoverUploadVisibility.cs" Link="Source\Enums\ProductCoverUploadVisibility.cs" />
+    <Compile Include="..\Helpers\ImageSignatureValidator.cs" Link="Source\Helpers\ImageSignatureValidator.cs" />
+    <Compile Include="..\Models\MultipartFileData.cs" Link="Source\Models\MultipartFileData.cs" />
+    <Compile Include="..\Models\UploadProductCoverResult.cs" Link="Source\Models\UploadProductCoverResult.cs" />
+    <Compile Include="..\Services\ProductCoverUploadService.cs" Link="Source\Services\ProductCoverUploadService.cs" />
   </ItemGroup>
 
 </Project>

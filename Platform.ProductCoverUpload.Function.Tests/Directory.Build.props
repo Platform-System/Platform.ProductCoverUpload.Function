@@ -1,0 +1,8 @@
+<Project>
+  <PropertyGroup>
+    <DefaultItemExcludes>$(DefaultItemExcludes);obj\**;bin\**</DefaultItemExcludes>
+    <MSBuildProjectExtensionsPath>C:\tmp\MicroServiceProject\$(MSBuildProjectName)\obj\</MSBuildProjectExtensionsPath>
+    <BaseIntermediateOutputPath>C:\tmp\MicroServiceProject\$(MSBuildProjectName)\obj\</BaseIntermediateOutputPath>
+    <BaseOutputPath>C:\tmp\MicroServiceProject\$(MSBuildProjectName)\bin\</BaseOutputPath>
+  </PropertyGroup>
+</Project>
