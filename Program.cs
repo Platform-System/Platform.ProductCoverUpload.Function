@@ -16,7 +16,10 @@ var host = new HostBuilder()
 
         services
             .AddOptions<BlobStorageOptions>()
-            .Bind(context.Configuration.GetSection(BlobStorageOptions.SectionName));
+            .Bind(context.Configuration.GetSection(BlobStorageOptions.SectionName))
+            .Validate(options => !string.IsNullOrWhiteSpace(options.ConnectionString), "BlobStorage:ConnectionString is required.")
+            .Validate(options => options.MaxFileSizeInMb > 0, "BlobStorage:MaxFileSizeInMb must be greater than 0.")
+            .ValidateOnStart();
 
         services
             .AddOptions<AuthenticationOptions>()
@@ -31,13 +34,10 @@ var host = new HostBuilder()
             .Validate(options => !string.IsNullOrWhiteSpace(options.Address), "Integrations:Catalog:Address is required.")
             .ValidateOnStart();
 
-        var catalogAddress = context.Configuration[$"{CatalogIntegrationOptions.SectionName}:Address"];
-
-        services.AddGrpcClient<CatalogIntegration.CatalogIntegrationClient>(options =>
+        services.AddGrpcClient<CatalogIntegration.CatalogIntegrationClient>((serviceProvider, options) =>
         {
-            options.Address = string.IsNullOrWhiteSpace(catalogAddress)
-                ? new Uri("http://localhost")
-                : new Uri(catalogAddress);
+            var catalogOptions = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<CatalogIntegrationOptions>>().Value;
+            options.Address = new Uri(catalogOptions.Address);
         });
 
         services.AddSingleton<ProductCoverUploadService>();
