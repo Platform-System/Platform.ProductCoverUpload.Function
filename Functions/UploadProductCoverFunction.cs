@@ -105,6 +105,8 @@ public sealed class UploadProductCoverFunction
 
             if (!setCoverResult.IsSuccess)
             {
+                await _productCoverUploadService.DeleteAsync(result, cancellationToken);
+
                 var statusCode = setCoverResult.IsUnavailable
                     ? HttpStatusCode.ServiceUnavailable
                     : HttpStatusCode.BadRequest;
@@ -122,6 +124,12 @@ public sealed class UploadProductCoverFunction
         {
             // Lỗi do validate/config sai thì trả 400 để client biết request chưa hợp lệ.
             return await HttpRequestHelpers.CreateBadRequestAsync(request, ex.Message, cancellationToken);
+        }
+        catch (Azure.RequestFailedException)
+        {
+            var internalError = request.CreateResponse(HttpStatusCode.InternalServerError);
+            await internalError.WriteStringAsync("Unable to upload product cover image.", cancellationToken);
+            return internalError;
         }
         catch (Exception)
         {

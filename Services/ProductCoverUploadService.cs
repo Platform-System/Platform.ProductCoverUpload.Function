@@ -91,4 +91,26 @@ public sealed class ProductCoverUploadService
             AltText = file.AltText
         };
     }
+
+    public async Task DeleteAsync(UploadProductCoverResult uploadResult, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(_blobStorageOptions.ConnectionString)
+            || string.IsNullOrWhiteSpace(uploadResult.ContainerName)
+            || string.IsNullOrWhiteSpace(uploadResult.BlobName))
+        {
+            return;
+        }
+
+        try
+        {
+            var blobServiceClient = new BlobServiceClient(_blobStorageOptions.ConnectionString);
+            var containerClient = blobServiceClient.GetBlobContainerClient(uploadResult.ContainerName);
+            var blobClient = containerClient.GetBlobClient(uploadResult.BlobName);
+            await blobClient.DeleteIfExistsAsync(cancellationToken: cancellationToken);
+        }
+        catch (Azure.RequestFailedException)
+        {
+            // Không che mất lỗi nghiệp vụ gốc nếu cleanup blob thất bại.
+        }
+    }
 }
